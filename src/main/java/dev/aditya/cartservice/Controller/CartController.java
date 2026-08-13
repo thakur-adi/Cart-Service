@@ -39,13 +39,13 @@ public class CartController {
     }
 
     //This is called when you hit "delete/remove" button on Cart page
-    @PutMapping("/remove/{id}")
+    @DeleteMapping("/remove/{id}")
     public ResponseEntity<CartResponseDTO> removeItemsFromCart(@PathVariable("id") Long productId){
         Cart userCart = cartService.removeFromCart(getUserId(),productId);
         return  new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.OK);
     }
 
-    @GetMapping("/checkout")
+    @PostMapping("/checkout")
     public ResponseEntity<String> createNewOrder(@RequestBody CheckoutRequestDTO checkoutRequestDTO){
         //call -> order system -> which will internally call -> Payment System
         cartService.createOrder(getUserId(), checkoutRequestDTO);
