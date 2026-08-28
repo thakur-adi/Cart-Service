@@ -3,7 +3,6 @@ package dev.aditya.cartservice.Controller;
 import dev.aditya.cartservice.Dto.CartResponseDTO;
 import dev.aditya.cartservice.Dto.CheckoutRequestDTO;
 import dev.aditya.cartservice.Dto.CartRequestDTO;
-import dev.aditya.cartservice.Dto.OrderDTO;
 import dev.aditya.cartservice.Model.Cart;
 import dev.aditya.cartservice.Service.ICartService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,9 +46,8 @@ public class CartController {
 
     @PostMapping("/checkout")
     public ResponseEntity<String> createNewOrder(@RequestBody CheckoutRequestDTO checkoutRequestDTO){
-        //call -> order system -> which will internally call -> Payment System
-        cartService.createOrder(getUserId(), checkoutRequestDTO);
-        return new ResponseEntity<>("Do not Refresh!! Order is now being processed!",HttpStatus.OK);
+        //call -> order system -> which will internally call -> Payment System(Returns Payment Link)
+        return cartService.createOrder(getUserId(), checkoutRequestDTO);
     }
 
 

@@ -95,7 +95,7 @@ public class CartService implements ICartService{
     }
 
     @Override
-    public void createOrder(Long userID, CheckoutRequestDTO checkoutRequestDTO) {
+    public ResponseEntity<String> createOrder(Long userID, CheckoutRequestDTO checkoutRequestDTO) {
         Cart cart =validator.getValidCart(userID);
         //Creating an orderDTO first
         OrderDTO orderDTO = new OrderDTO();
@@ -113,8 +113,8 @@ public class CartService implements ICartService{
         headers.add("X-User-Id",String.valueOf(userID));
 
         HttpEntity<OrderDTO> requestEntity = new HttpEntity<>(orderDTO,headers);
-
-        ResponseEntity<Void> orderResponseEntity = restTemplate.postForEntity(baseUrl,requestEntity,Void.class);
+        //Just return whatever receiving from order service along with status code etc.
+        return restTemplate.postForEntity(baseUrl,requestEntity,String.class);
     }
 
 
