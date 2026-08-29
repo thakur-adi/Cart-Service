@@ -16,5 +16,5 @@ public interface ICartService {
 
     Cart removeFromCart(Long userId, Long productId);
 
-    ResponseEntity<String> createOrder(Long userID, CheckoutRequestDTO checkoutRequestDTO);
+    ResponseEntity<String> createOrder(String authToken, Long userID, CheckoutRequestDTO checkoutRequestDTO);
 }

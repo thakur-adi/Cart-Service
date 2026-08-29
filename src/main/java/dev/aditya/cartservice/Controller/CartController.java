@@ -6,6 +6,7 @@ import dev.aditya.cartservice.Dto.CartRequestDTO;
 import dev.aditya.cartservice.Model.Cart;
 import dev.aditya.cartservice.Service.ICartService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -45,9 +46,9 @@ public class CartController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<String> createNewOrder(@RequestBody CheckoutRequestDTO checkoutRequestDTO){
+    public ResponseEntity<String> createNewOrder(@RequestHeader(HttpHeaders.AUTHORIZATION) String authToken, @RequestBody CheckoutRequestDTO checkoutRequestDTO){
         //call -> order system -> which will internally call -> Payment System(Returns Payment Link)
-        return cartService.createOrder(getUserId(), checkoutRequestDTO);
+        return cartService.createOrder(authToken, getUserId(),checkoutRequestDTO);
     }
 
 

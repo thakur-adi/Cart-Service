@@ -2,9 +2,7 @@ package dev.aditya.cartservice.Model;
 
 import dev.aditya.cartservice.Dto.CartResponseDTO;
 import dev.aditya.cartservice.Dto.ProductResponseDTO;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +20,8 @@ public class Cart extends Base{
     private Long userId;//We index the cart table based on userId so that it's quicker to query on.
 
     @Setter(value = AccessLevel.NONE)
+    @ManyToMany(fetch = FetchType.EAGER,cascade = CascadeType.REMOVE)
+    //Unfortunately there needs to be a relation between these 2 classes as it's a list and RelationalDB can't store lists as a value(violates 1-nf). So we have to make product also an entity and define a relation between these 2 entities.
     private Map<Long, Product> products;
 
     private Double totalAmount;
