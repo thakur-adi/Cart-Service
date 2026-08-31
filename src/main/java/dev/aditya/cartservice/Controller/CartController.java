@@ -18,7 +18,7 @@ public class CartController {
     @Autowired
     private ICartService cartService;
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<CartResponseDTO> viewCartItems(){
         Cart userCart =  cartService.viewCart(getUserId());
        return new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.FOUND);
@@ -55,7 +55,8 @@ public class CartController {
     //Helper Methods
 
     private Long getUserId() {
-        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        //Can't just cast String to Long i.e. (Long) SecurityContextHolder..... won't work. This is the only solution -> First cast to String then convert to Long
+        return Long.valueOf((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
     }
 
 }

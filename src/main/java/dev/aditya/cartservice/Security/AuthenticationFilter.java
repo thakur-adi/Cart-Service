@@ -36,8 +36,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String authToken =request.getHeader(HttpHeaders.AUTHORIZATION);
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setBearerAuth(authToken);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.set(HttpHeaders.AUTHORIZATION, authToken);
+        //httpHeaders.setBearerAuth(authToken); //This is not working gives 401 error saying "[no body]". Only fix is use the above way.
 
         HttpEntity<Void> httpEntity = new HttpEntity<>(httpHeaders);
 
