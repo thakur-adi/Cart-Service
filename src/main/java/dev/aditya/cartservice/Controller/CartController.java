@@ -18,7 +18,7 @@ public class CartController {
     @Autowired
     private ICartService cartService;
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<CartResponseDTO> viewCartItems(){
         Cart userCart =  cartService.viewCart(getUserId());
        return new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.FOUND);
