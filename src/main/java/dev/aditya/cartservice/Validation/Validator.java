@@ -16,7 +16,7 @@ public class Validator {
     public Cart getValidCart(Long userId){
         Optional<Cart> optionalCart = cartRepo.findCartByUserIdAndIsActive(userId,Boolean.TRUE);
         if(optionalCart.isEmpty()){
-            throw new EmptyCartException("Your cart is Empty!");
+            throw new EmptyCartException("Your cart is Empty! Please add something to you cart first!!");
         }
         return optionalCart.get();
     }

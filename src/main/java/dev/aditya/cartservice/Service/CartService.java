@@ -5,6 +5,7 @@ import dev.aditya.cartservice.Dto.OrderDTO;
 import dev.aditya.cartservice.Dto.ProductCatalogDTO;
 import dev.aditya.cartservice.Dto.CartRequestDTO;
 import dev.aditya.cartservice.Exception.EmptyCartException;
+import dev.aditya.cartservice.Exception.ProductNotFoundException;
 import dev.aditya.cartservice.Model.Cart;
 import dev.aditya.cartservice.Model.Product;
 import dev.aditya.cartservice.Repository.CartRepo;
@@ -60,6 +61,7 @@ public class CartService implements ICartService{
                 addNewProductToCart(cart, cartRequestDTO);
             }
         }
+        cart.setIsActive(Boolean.TRUE);
         return cartRepo.save(cart);
     }
 
@@ -86,9 +88,13 @@ public class CartService implements ICartService{
     public Cart removeFromCart(Long userId, Long productId) {
         Cart cart = validator.getValidCart(userId);
         Product product = cart.getProducts().get(productId);
+        if(product==null){
+            throw new ProductNotFoundException("No Product Found!! The product you are looking for for has already been removed!");
+        }
         cart.removeProduct(product);
         if(cart.getProducts().isEmpty()){
             cart.setIsActive(Boolean.FALSE);
+            cartRepo.save(cart);
             throw new EmptyCartException("Your cart is now empty!! Please add in some items!");
         }
         cart.setTotalAmount(cart.getTotalAmount()-(product.getPrice()*product.getQuantity()));
@@ -113,12 +119,18 @@ public class CartService implements ICartService{
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(authToken);
+        headers.setBearerAuth(authToken.substring(7));
 
         HttpEntity<OrderDTO> requestEntity = new HttpEntity<>(orderDTO,headers);
 
         //Just return whatever receiving from order service along with status code etc.
-        return restTemplate.postForEntity(baseUrl,requestEntity,String.class);
+        ResponseEntity<String> paymentLinkResponse =  restTemplate.postForEntity(baseUrl,requestEntity,String.class);
+
+        //Once Payment Link has been generated cart should get deleted or emptied as it has now become an order
+        cart.setIsActive(Boolean.FALSE);
+        cartRepo.save(cart);
+        
+        return paymentLinkResponse;
     }
 
 
@@ -140,9 +152,11 @@ public class CartService implements ICartService{
             product.setProductImageUrl(productCatalogDTO.getImageUrl());
             product.setPrice(productCatalogDTO.getPrice());
         }
+        /*
+        This else condition wouldn't work as the call will fail at line 141 itself and throw an HttpServerErrorException
         else {
             throw new InternalServerErrorException("Some internal server issue encountered! Please try again later!!");
-        }
+        }*/
         Optional<Product> optProduct = productRepo.findProductByProductIdAndQuantityAndPrice(product.getProductId(), product.getQuantity(), product.getPrice());
         if(optProduct.isEmpty()){
             return productRepo.save(product);

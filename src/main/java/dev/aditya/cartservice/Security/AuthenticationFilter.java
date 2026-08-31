@@ -37,7 +37,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.set(HttpHeaders.AUTHORIZATION, authToken);
-        //httpHeaders.setBearerAuth(authToken); //This is not working gives 401 error saying "[no body]". Only fix is use the above way.
+        //httpHeaders.setBearerAuth(authToken); //Found the issue, this adds another "Bearer " keyword in front of it so out token actually becomes "Bearer Bearer ..." this causes issues.
 
         HttpEntity<Void> httpEntity = new HttpEntity<>(httpHeaders);
 

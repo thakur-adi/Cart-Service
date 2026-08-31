@@ -25,21 +25,21 @@ public class CartController {
     }
 
     //This will be called when the user hits "Add to cart" button on product page.
-    @PostMapping("/add")
+    @PostMapping("/")
     public ResponseEntity<CartResponseDTO> addItemsToCart(@RequestBody CartRequestDTO cartRequestDto){
         Cart userCart = cartService.addToCart(getUserId(), cartRequestDto);
         return new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.OK);
     }
 
     //This will be called when user updates the quantity of any product already present in the cart on cart page
-    @PutMapping("/update")
+    @PutMapping("/")
     public ResponseEntity<CartResponseDTO> updateItemsFromCart(@RequestBody CartRequestDTO cartRequestDto){
         Cart userCart = cartService.updateCart(getUserId(),cartRequestDto);
         return  new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.OK);
     }
 
     //This is called when you hit "delete/remove" button on Cart page
-    @DeleteMapping("/remove/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<CartResponseDTO> removeItemsFromCart(@PathVariable("id") Long productId){
         Cart userCart = cartService.removeFromCart(getUserId(),productId);
         return  new ResponseEntity<>(userCart.convertToCartDto(), HttpStatus.OK);
