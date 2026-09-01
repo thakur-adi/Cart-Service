@@ -9,7 +9,7 @@ import org.springframework.web.client.HttpServerErrorException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
+    //For failed RestTemplate call i.e. this gets called when restTemplate call fails
     @ExceptionHandler(HttpServerErrorException.class)
     public ResponseEntity<String> handleHttpServerErrorException(HttpServerErrorException e){
         return new ResponseEntity<>("Couldn't generate payment link! Please try again later!",e.getStatusCode());
