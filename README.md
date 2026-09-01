@@ -391,7 +391,7 @@ The Cart Service communicates with the User & Auth Service and Order Service usi
                 ▲                 ▲
                 │                 │
                 │                 │
-          /validate           Create Order
+          /validate             /new(creates new order)
                 ▲                 ▲
                 │                 │
                 └───────┬─────────┘
@@ -399,8 +399,7 @@ The Cart Service communicates with the User & Auth Service and Order Service usi
                         │
                   Cart Service
                         │
-               LoadBalanced
-                 RestTemplate
+               LoadBalanced RestTemplate
 ```
 
 ### User/Auth Communication
@@ -432,6 +431,9 @@ LoadBalanced RestTemplate
      │
      ▼
 Order Service
+     │
+     ▼
+    /new
 ```
 
 The physical location of these services is not hardcoded; they are resolved through service discovery.
