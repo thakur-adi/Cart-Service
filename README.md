@@ -14,7 +14,6 @@ The service manages user-specific shopping carts within the E-Commerce Microserv
 * **Dedicated cart update flow** — Cart updates from the cart screen are handled separately from the Add to Cart operation, allowing quantities and other supported cart details to be modified explicitly
 * **Soft-delete cart lifecycle** — After an order is successfully created, the cart is marked inactive instead of being immediately deleted
 * **Persistent active carts** — Active carts remain available across sessions so users can return later and continue shopping
-* **Scheduled cart cleanup** — Inactive carts that have already been moved into orders can be physically removed through an end-of-day scheduled cleanup
 * **Checkout orchestration** — Checkout delegates order creation to the Order Service rather than directly handling order or payment responsibilities
 * **Service-to-service communication** — Communication with User & Auth and Order Services uses Eureka-based service discovery and load-balanced RestTemplate
 * **Clean layered architecture** — Controller, service, repository, security, and domain responsibilities are separated following clean code and Low-Level Design principles
@@ -105,6 +104,33 @@ GET /cart
 
 The authenticated user's ID is retrieved from the security context and used to locate the user's active cart.
 
+```text
+GET /cart
+     │
+     ▼
+Spring Security Filter Chain
+     │
+     ▼
+Validate Access Token
+     │
+     ▼
+User/Auth Service /validate
+     │
+     ▼
+X-User-Id
+     │
+     ▼
+SecurityContext
+     │
+     ▼
+Cart Service
+     │
+     ▼
+Find Active Cart
+     │
+     ▼
+Return Cart
+```
 ---
 
 ### Add to Cart
@@ -133,6 +159,27 @@ and so on.
 
 The operation therefore updates the existing cart item's quantity when the product is already present rather than creating duplicate cart items.
 
+```text
+POST /cart/
+     │
+     ▼
+Authenticated User
+     │
+     ▼
+SecurityContext → User ID
+     │
+     ▼
+Find Active Cart
+     │
+     ▼
+Check Product
+     │
+     ├── New Product
+     │       └── Add Cart Item
+     │
+     └── Existing Product
+             └── Increase Quantity
+```
 ---
 
 ### Update Cart
@@ -153,6 +200,24 @@ Product A → Quantity 3
 
 It provides a separate update flow from the Add to Cart operation.
 
+```text
+PUT /cart/
+     │
+     ▼
+Authenticated User
+     │
+     ▼
+SecurityContext → User ID
+     │
+     ▼
+Find User's Active Cart
+     │
+     ▼
+Update Cart Item
+     │
+     ▼
+Persist Changes
+```
 ---
 
 ### Remove Cart Item
@@ -178,22 +243,34 @@ The Cart Service does not directly create the payment.
 Instead, the flow is:
 
 ```text
-Cart Service
-      │
-      ▼
+POST /cart/checkout
+        │
+        ▼
+Authenticated User
+        │
+        ▼
+Retrieve Active Cart
+        │
+        ▼
+Call Order Service
+        │
+        ▼
 Order Service
-      │
-      ▼
+        │
+        ▼
 Payment Service
-      │
-      ▼
+        │
+        ▼
 Payment Link
-      │
-      ▼
-Order Service
-      │
-      ▼
-Cart Service
+        │
+        ▼
+Order Created
+        │
+        ▼
+Cart.isActive = false
+        │
+        ▼
+Return Checkout Information
 ```
 
 Once the Order Service successfully creates the order, the Cart Service marks the corresponding cart as inactive.
@@ -224,7 +301,7 @@ User adds products
 
 This allows users to continue shopping without losing previously added items.
 
-### Checkout
+### After Checkout
 
 After successful order creation:
 
@@ -242,7 +319,7 @@ The cart is therefore no longer presented as the user's current active cart.
 
 ---
 
-## Soft Delete & Scheduled Cleanup
+## Soft Delete
 
 Carts that have successfully transitioned into orders are **soft-deleted** by setting:
 
@@ -264,7 +341,7 @@ Order Created
 Cart.isActive = false
    │
    │
-   │ EOD Scheduled Job
+   │ EOD Scheduled Job(In Roadmap)
    ▼
 Physical Deletion
 ```
@@ -297,118 +374,6 @@ All endpoints require authentication.
 | `PUT`    | `/cart/`         | Access Token  | Update cart item details/quantities              |
 | `DELETE` | `/cart/{id}`     | Access Token  | Remove an item from the cart                     |
 | `POST`   | `/cart/checkout` | Access Token  | Create an order from the current cart            |
-
----
-
-## Request Flows
-
-### View Cart
-
-```text
-GET /cart
-     │
-     ▼
-Spring Security Filter Chain
-     │
-     ▼
-Validate Access Token
-     │
-     ▼
-User/Auth Service /validate
-     │
-     ▼
-X-User-Id
-     │
-     ▼
-SecurityContext
-     │
-     ▼
-Cart Service
-     │
-     ▼
-Find Active Cart
-     │
-     ▼
-Return Cart
-```
-
-### Add to Cart
-
-```text
-POST /cart/
-     │
-     ▼
-Authenticated User
-     │
-     ▼
-SecurityContext → User ID
-     │
-     ▼
-Find Active Cart
-     │
-     ▼
-Check Product
-     │
-     ├── New Product
-     │       └── Add Cart Item
-     │
-     └── Existing Product
-             └── Increase Quantity
-```
-
-### Update Cart
-
-```text
-PUT /cart/
-     │
-     ▼
-Authenticated User
-     │
-     ▼
-SecurityContext → User ID
-     │
-     ▼
-Find User's Active Cart
-     │
-     ▼
-Update Cart Item
-     │
-     ▼
-Persist Changes
-```
-
-### Checkout
-
-```text
-POST /cart/checkout
-        │
-        ▼
-Authenticated User
-        │
-        ▼
-Retrieve Active Cart
-        │
-        ▼
-Call Order Service
-        │
-        ▼
-Order Service
-        │
-        ▼
-Payment Service
-        │
-        ▼
-Payment Link
-        │
-        ▼
-Order Created
-        │
-        ▼
-Cart.isActive = false
-        │
-        ▼
-Return Checkout Information
-```
 
 ---
 
@@ -493,15 +458,11 @@ The physical location of these services is not hardcoded; they are resolved thro
 
 ### Why soft-delete the cart after checkout?
 
--> Once a cart has been successfully converted into an order, it should no longer appear as the user's active cart. Marking it inactive separates the business lifecycle from physical database cleanup while avoiding unnecessary immediate deletion.
+-> Once a cart has been successfully converted into an order, it should no longer appear as the user's active cart. Marking it inactive separates the business lifecycle from physical database cleanup while avoiding unnecessary immediate deletion. At end-of-day a cron job can remove these records while keeping the checkout operation itself simple and separating business state transition from database cleanup.
 
 ### Why retain active carts?
 
 -> Users may leave the application and return later expecting their cart to still contain their previously selected products. Active carts therefore remain persistent across sessions until they are successfully converted into an order.
-
-### Why scheduled cleanup?
-
--> Inactive carts have already been transferred into orders and no longer need to remain in the active cart dataset. An end-of-day cleanup job can physically remove these records while keeping the checkout operation itself simple and separating business state transition from database cleanup.
 
 ### Why does Cart call Order instead of Payment directly?
 
@@ -519,7 +480,6 @@ The physical location of these services is not hardcoded; they are resolved thro
 | ORM                   | Spring Data JPA            |
 | Service Discovery     | Netflix Eureka             |
 | Service Communication | Load-balanced RestTemplate |
-| Scheduling            | Spring Scheduler           |
 | Build Tool            | Maven                      |
 | Language              | Java                       |
 
@@ -563,6 +523,7 @@ The Cart Service will register itself with the Eureka Service Discovery Server a
 * Kafka-based event communication
 * Event-driven order/cart lifecycle updates
 * Redis caching for frequently accessed carts
+* Scheduled cleanup of inactive carts
 * Distributed tracing and observability
 * Docker containerization
 * Additional cart optimization and concurrency handling
